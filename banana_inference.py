@@ -58,7 +58,6 @@ st.markdown(
     'Classes 2 and 3 are the intermediate grades.'
 )
 
-st.markdown('Use the tabs to explore the data or try the model.')
 
 tab_data, tab_predict = st.tabs(['1. The data', '2. Try the model'])
 
