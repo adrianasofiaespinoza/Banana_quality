@@ -29,7 +29,6 @@ k = loaded_classifier.n_neighbors
 
 @st.cache_data
 def load_data():
-    # Same preprocessing as the notebook: one row per banana tier
     bananas = pd.read_csv('banana_features.csv')
     df = (bananas.groupby('SampleID')
                  .agg(R=('R', 'mean'), G=('G', 'mean'), B=('B', 'mean'),
@@ -61,7 +60,6 @@ bananas, df = load_data()
 X = df[['R', 'G', 'B', 'size']]
 y = df['quality']
 
-# Same split as the notebook (same random_state), so the test set is the same
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=42)
 
@@ -107,7 +105,6 @@ st.markdown(
     'Classes 2 and 3 are the intermediate grades.'
 )
 
-st.markdown('Go through the tabs in order to understand the project step by step.')
 
 tab_data, tab_train, tab_results, tab_predict = st.tabs(
     ['1. The data', '2. How it was trained', '3. Results', '4. Try the model'])
@@ -122,17 +119,6 @@ with tab_data:
         '- **size**: the length of the top middle finger, measured by hand in millimeters.\n\n'
         'And the **class** (1 to 4) given by the expert, which is what we want to predict.'
     )
-
-    st.subheader('An important detail: each banana appears 6 times')
-    st.markdown(
-        f'The original file has **{len(bananas):,} rows**, but only **{df.shape[0]} banana tiers**. '
-        'Each tier was photographed from 6 sides (front, back, left, right, top and bottom).\n\n'
-        'If we used the rows as they are, photos of the same banana could end up some in training '
-        'and others in testing. The model would be tested on a banana it has already seen, and it would look '
-        'better than it really is. That is why we **average the color of the 6 photos** and keep one row per banana.'
-    )
-    st.dataframe(df.head(), hide_index=True)
-    st.caption('This is how the data looks after averaging: one row per banana tier.')
 
     st.subheader('How many bananas are there in each class?')
     fig, ax = plt.subplots()
