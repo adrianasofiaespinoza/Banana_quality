@@ -1,4 +1,3 @@
-# Streamlit web app for the "Banana Quality Classification" notebook (k-NN + Random Forest)
 import streamlit as st
 import joblib
 import numpy as np
@@ -22,8 +21,6 @@ CLASS_NAMES = {
     3: 'Class 3 – Intermediate',
     4: 'Class 4 – Reject (the worst)',
 }
-
-# ---------- Load the model trained in the notebook ----------
 saved = joblib.load('knn_banana_model.pkl')
 scaler = saved['scaler']
 loaded_classifier = saved['model']
@@ -165,44 +162,21 @@ with tab_data:
 
 # ---------------------------------------------------------------------
 with tab_train:
-    st.header('What does "training" the model mean?')
+    st.subheader('Step 1: split the data')
     st.markdown(
-        'Training means showing the model many bananas **together with their correct class**, so it learns '
-        'the relationship between color, size and quality. Then we give it **new bananas, without the '
-        'answer**, and check whether it gets them right.'
+        f'We used {len(X_train)} tiers (80%) to train the models and kept {len(X_test)} tiers (20%) '
+        'to test them. The models never see the test tiers while learning.'
     )
 
-    st.subheader('Step 1: split the data into training and test sets')
+    st.subheader('Step 2: the k-NN model')
     st.markdown(
-        f'We split the {df.shape[0]} banana tiers into two groups:\n\n'
-        f'- **Training ({len(X_train)} tiers, 80%)**: the model learns from these.\n'
-        f'- **Test ({len(X_test)} tiers, 20%)**: the model **never sees them** while learning. '
-        'We keep them for the end, like an exam.\n\n'
-        'The split keeps the same proportion of each class in both groups, so the exam is fair.'
-    )
-
-    st.subheader('Step 2: the k-NN model (k-Nearest Neighbors)')
-    st.markdown(
-        'The idea behind k-NN is very intuitive: **"tell me who you look like and I will tell you what you are"**.\n\n'
-        'When a new banana arrives, the model looks for the **k most similar bananas** in the training data '
-        '(its "neighbors", the ones with the closest color and size) and gives it the class that appears '
-        f'most often among them. With k = {k}, it looks at the {k} most similar bananas and they vote.\n\n'
-        '**First, everything must be on the same scale.** Size goes from about 70 to 190 mm, and the colors '
-        'have other ranges. Since k-NN measures distances, without scaling the variable with the biggest numbers '
-        'would dominate everything. That is why we use a `StandardScaler`, which puts the 4 variables on the same scale.'
+        f'To classify a new banana, k-NN looks for the {k} most similar bananas in the training data '
+        'and picks the most common class among them. The data is scaled first, so size does not '
+        'dominate the colors.'
     )
 
     st.subheader(f'Step 3: why k = {k}?')
-    st.markdown(
-        'k is the number of neighbors the model looks at, and we have to choose it. If k is too small, '
-        'the model gets carried away by a single unusual banana. If it is too large, it mixes bananas that are not alike.\n\n'
-        'To choose it we **do not use the test set** (that would be cheating, like seeing the exam beforehand). '
-        'We use **cross-validation** with the training data only:\n\n'
-        '1. The training data is split into 5 parts.\n'
-        '2. The model is trained on 4 parts and evaluated on the remaining one, rotating until every part has been used for testing.\n'
-        '3. All of that is repeated 5 times with different parts, and the results are averaged.\n\n'
-        'This is done for every value of k from 1 to 25.'
-    )
+    st.markdown('We tested k from 1 to 25 using cross-validation on the training data only.')
     with st.spinner('Running cross-validation...'):
         cv_scores = cross_validation_scores(X_train, y_train)
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -216,18 +190,13 @@ with tab_train:
     st.markdown(
         f'In the graph, the best result was with k = {best} ({cv_scores[best - 1]:.1%}), but k = {k} '
         f'was practically tied ({cv_scores[k - 1]:.1%}). We chose k = {k} because looking at more neighbors '
-        'makes the model more stable. With larger values of k, the model generally gets worse.'
+        'makes the model more stable.'
     )
 
-    st.subheader('Step 4: why did we also try Random Forest?')
+    st.subheader('Step 4: why Random Forest?')
     st.markdown(
-        'To know whether k-NN is a good option, we need to **compare it with another model**. '
-        'We chose Random Forest because it works in a very different way:\n\n'
-        '- It builds **100 decision trees**. Each tree asks questions like '
-        '"is the finger longer than 145 mm?" or "is green greater than 100?" until it reaches a class. '
-        'In the end, the 100 trees vote.\n'
-        '- It **does not measure distances**, so it does not need scaled data.\n'
-        '- It tells us **which variables were the most important** for the decision, something k-NN cannot do.'
+        'We used it to compare with k-NN. It works differently (100 decision trees that vote), '
+        'it does not need scaled data, and it shows which variables matter most.'
     )
 
 # ---------------------------------------------------------------------
@@ -242,11 +211,6 @@ with tab_results:
                 help=f'Got {int(round(acc_knn * len(X_test)))} of {len(X_test)} tiers right')
     col2.metric('Random Forest', f'{acc_rf:.1%}',
                 help=f'Got {int(round(acc_rf * len(X_test)))} of {len(X_test)} tiers right')
-    st.markdown(
-        f'Random Forest got more right. But be careful: with only {len(X_test)} test bananas, **each banana is worth '
-        f'{1 / len(X_test):.1%}**, so the difference should be taken with some caution. '
-        'With a different split of the data the numbers could change a little.'
-    )
 
     st.subheader('Confusion matrices: where does each model make mistakes?')
     col1, col2 = st.columns(2)
@@ -302,14 +266,6 @@ with tab_predict:
                         help=f'In the data it goes from {X["B"].min():.0f} to {X["B"].max():.0f}')
     size = st.number_input('Finger length (mm)', min_value=0.0, max_value=300.0, value=150.0,
                            help=f'In the data it goes from {X["size"].min():.0f} to {X["size"].max():.0f} mm')
-
-    # Sample of the color made by R, G and B
-    st.markdown(
-        f'<div style="display:flex;align-items:center;gap:12px;margin:8px 0 16px;">'
-        f'<div style="width:48px;height:48px;border-radius:8px;border:1px solid #999;'
-        f'background:rgb({int(r)},{int(g)},{int(b)});"></div>'
-        f'<span>This is the average color you entered.</span></div>',
-        unsafe_allow_html=True)
 
     # Feature table for prediction (same column names as in training)
     features = pd.DataFrame({'R': [r], 'G': [g], 'B': [b], 'size': [size]})
