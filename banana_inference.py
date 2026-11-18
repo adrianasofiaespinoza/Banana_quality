@@ -45,6 +45,7 @@ st.markdown(
     '(a *tier*, or *hand*, is a small bunch of bananas). We used those examples to train a '
     '**k-NN** model so it learns to do the same job as the expert.'
 )
+st.markdown('📂 Source code: [GitHub repository](https://github.com/adrianasofiaespinoza/Banana_quality)')
 
 st.subheader('The 4 quality classes')
 counts = y.value_counts().sort_index()
